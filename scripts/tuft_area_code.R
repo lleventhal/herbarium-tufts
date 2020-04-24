@@ -60,6 +60,8 @@ setdiff(all_areas$plant_id, herb_counts$specimen) %>% sort()
 # Some are missing climate data, 5 weren't georeferenced and others are outside the time range of the flint database.
 setdiff(all_areas$plant_id, clim$specimen) %>% sort()
 
+#delete insignis outlier
+#all_tufts<-all_tufts[-c(322), ]
 
 # First, visualize all your variables just to get a sense of how they're distributed:
 
@@ -119,19 +121,24 @@ plot(ggpredict(m5, terms = c("cwd_sep_apr", "species")))
 # Q6 Does climate's effect on plant size depend on species?
 m6=lm(stem_height ~ species*cwd_sep_apr, data = all_tufts)
 summary(m6)
-#DIFFERENCEs between size and climate are insignificant, more significant when you look at it by species
+ggplot(data=all_tufts, aes(x=cwd_sep_apr, y=stem_height, col=species))+
+  scale_color_manual(values = c("navy", "maroon", "dark orange"))+
+  geom_point()+
+  geom_smooth(method = lm)+
+  theme(panel.background = element_blank())+
+  labs(x="CWD", y="Stem Height (cm)")
+#significant for insignis and inflatus but not coulteri
+
 
 #so just make size a main effect on the model
-m7=lm(all_tufts_area ~ cwd_sep_apr*species + stem_height, data = all_tufts)
+m7=lm(maintuft_area ~ cwd_sep_apr*species + stem_height, data = all_tufts)
 summary(m7)
-
-
-
-
-
-
-
-
+ggplot(data=all_tufts, aes(x=cwd_sep_apr, y=maintuft_area, col=species))+
+  scale_color_manual(values = c("navy", "maroon", "dark orange"))+
+  geom_point()+
+  geom_smooth(method = lm)+
+  theme(panel.background = element_blank())+
+  labs(x="CWD", y="Main tuft area (cm^2)")
 
 # If climate's effect on plant size is not dependent on species, then plant size can be a main effect in the model
 m8=lm(all_tufts_area ~ cwd_sep_apr + stem_height, data = all_tufts)
@@ -143,13 +150,16 @@ m9=lm(all_tufts_area ~ cwd_sep_apr, data = all_tufts)
 summary(m9)
 
 
-
 #does tuft area trade off with reproductive attempts?
-m10=lm(reproductive_attempts ~ log_maintuft_area + pheno_stage, data = all_tufts)
+m10=lm(reproductive_attempts ~ log_maintuft_area + pheno_stage + stem_height, data = filter(all_tufts, species == "inflatus"))
+summary(m10)
+m10=lm(reproductive_attempts ~ log_maintuft_area + pheno_stage + stem_height, data = filter(all_tufts, species == "coulteri"))
+summary(m10)
+m10=lm(reproductive_attempts ~ log_maintuft_area + pheno_stage + stem_height, data = filter(all_tufts, species == "insignis"))
 summary(m10)
 #strong positive relationship between tuft area and number of reprodutive structures... so tuft area does not trade off with reproductive attempts
 
 #does having a tuft increase fruit filling?
-m11=lm(filled_proportion ~ log_maintuft_area, data = all_tufts)
+m11=glm(filled_proportion ~ log_maintuft_area, data = all_tufts, family="binomial")
 summary(m11)
 #no?
